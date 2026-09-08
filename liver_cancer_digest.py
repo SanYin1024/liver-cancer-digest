@@ -377,7 +377,10 @@ def markdown_to_html(text):
     def flush_paragraph():
         nonlocal paragraph
         if paragraph:
-            html_parts.append(f"<p>{html_escape(' '.join(paragraph))}</p>")
+            html_parts.append(
+                '<p style="margin:0 0 12px;color:#475569;font-size:14px;line-height:1.7;">'
+                f"{html_escape(' '.join(paragraph))}</p>"
+            )
             paragraph = []
 
     def flush_list():
@@ -396,42 +399,74 @@ def markdown_to_html(text):
         if stripped and len(stripped) <= 60 and (stripped.endswith("：") or stripped.endswith(":")):
             flush_paragraph()
             flush_list()
-            html_parts.append(f"<h2>{html_escape(stripped.rstrip('：:'))}</h2>")
+            html_parts.append(
+                '<h2 style="margin:20px 0 10px;padding-left:10px;border-left:4px solid #0f766e;'
+                'font-size:16px;line-height:1.4;color:#0f172a;">'
+                f"{html_escape(stripped.rstrip('：:'))}</h2>"
+            )
             continue
         if stripped.startswith("- ") or stripped.startswith("* "):
             flush_paragraph()
             if not in_list:
-                html_parts.append("<ul>")
+                html_parts.append(
+                    '<ul style="margin:0 0 14px;padding:0 0 0 20px;color:#475569;">'
+                )
                 in_list = True
-            html_parts.append(f"<li>{html_escape(stripped[2:].strip())}</li>")
+            html_parts.append(
+                '<li style="margin:0 0 8px;padding-left:4px;font-size:14px;line-height:1.65;">'
+                f"{html_escape(stripped[2:].strip())}</li>"
+            )
             continue
         paragraph.append(stripped)
     flush_paragraph()
     flush_list()
-    return "".join(html_parts) if html_parts else "<p></p>"
+    return "".join(html_parts) if html_parts else '<p style="margin:0;"></p>'
 
 
 def render_digest_html(subject, digest, search_url, start_label, end_label, paper_count, selected_count):
     digest_html = markdown_to_html(digest)
+    # Keep the first paragraph as the visual overview, while the full AI digest
+    # remains below in the same card-based language as the supplied UI.
+    overview_text = html_escape(
+        re.sub(r"<[^>]+>", " ", digest_html).replace("\n", " ").strip()
+    )
+    if len(overview_text) > 320:
+        overview_text = overview_text[:320].rstrip() + "…"
     return f"""
-    <div style="margin:0;background:#f3f4f6;padding:24px 0;">
-      <div style="max-width:860px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
-        <div style="padding:24px 28px;border-bottom:1px solid #e5e7eb;background:#fafafa;">
-          <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.04em;color:#6b7280;text-transform:uppercase;">Daily Research Brief</div>
-          <div style="font-family:Arial,sans-serif;font-size:24px;line-height:1.2;font-weight:700;color:#111827;margin-top:6px;">{subject}</div>
-          <div style="font-family:Arial,sans-serif;font-size:13px;color:#6b7280;margin-top:8px;">
-            {start_label} to {end_label} · {paper_count} papers fetched · {selected_count} screened in
+    <div style="margin:0;background:#f8fafc;padding:18px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#0f172a;">
+      <div style="width:100%;max-width:480px;margin:0 auto;background:#f8fafc;">
+        <div style="padding:18px 16px 14px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;padding:5px 10px;width:max-content;background:#f0fdfa;border:1px solid #ccfbf1;border-radius:20px;color:#0f766e;font-size:11px;font-weight:700;">
+            <span style="display:inline-block;width:6px;height:6px;background:#0f766e;border-radius:50%;"></span>
+            肝癌文献日报
+          </div>
+          <div style="font-size:24px;line-height:1.25;font-weight:800;margin-bottom:14px;color:#0f172a;">{html_escape(subject)}</div>
+          <div style="display:flex;align-items:stretch;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="flex:1;"><div style="font-size:11px;color:#64748b;">推送日期</div><div style="font-size:14px;font-weight:700;color:#0f172a;">{html_escape(end_label)}</div></div>
+            <div style="width:1px;background:#e2e8f0;margin:0 8px;"></div>
+            <div style="flex:1;"><div style="font-size:11px;color:#64748b;">文献检索</div><div style="font-size:14px;font-weight:700;color:#0f172a;">{paper_count} 篇</div></div>
+            <div style="width:1px;background:#e2e8f0;margin:0 8px;"></div>
+            <div style="flex:1;"><div style="font-size:11px;color:#64748b;">精选入库</div><div style="font-size:14px;font-weight:700;color:#0f766e;">{selected_count} 篇</div></div>
+          </div>
+          <div style="background:#0f766e;color:#fff;padding:16px;border-radius:16px;margin-bottom:20px;box-shadow:0 8px 20px -4px rgba(15,118,110,.25);">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;">✦ 今日概览</div>
+            <div style="font-size:14px;line-height:1.55;opacity:.95;">{overview_text}</div>
           </div>
         </div>
-        <div style="padding:28px;font-family:Arial,sans-serif;color:#111827;line-height:1.72;font-size:14px;">
-          <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:18px 20px;white-space:normal;">
-            {digest_html}
-          </div>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
-            PubMed search:
-            <a href="{search_url}" style="color:#2563eb;text-decoration:none;">{search_url}</a>
-          </div>
+        <div style="padding:0 16px 12px;font-size:16px;font-weight:700;">
+          <span style="display:inline-block;width:4px;height:16px;background:#0f766e;border-radius:2px;vertical-align:-2px;margin-right:8px;"></span>
+          精选论文简报
+          <span style="float:right;font-size:12px;font-weight:400;color:#64748b;">共 {selected_count} 篇</span>
         </div>
+        <div style="margin:0 16px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+          {digest_html}
+        </div>
+        <div style="margin:0 16px 20px;padding:14px 16px;background:#f1f5f9;border-radius:10px;font-size:12px;color:#64748b;">
+          <div style="font-weight:600;color:#0f172a;margin-bottom:6px;">⌕ 检索来源</div>
+          <a href="{html_escape(search_url)}" style="color:#0284c7;text-decoration:none;word-break:break-all;font-size:11px;">{html_escape(search_url)}</a>
+          <div style="margin-top:8px;">检索范围：{html_escape(start_label)} 至 {html_escape(end_label)}</div>
+        </div>
+        <div style="text-align:center;padding:4px 16px 18px;font-size:12px;color:#64748b;">由 PubMed + AI 自动整理 · 请以原文为准</div>
       </div>
     </div>
     """
