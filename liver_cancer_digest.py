@@ -16,6 +16,7 @@ from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import quote, urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -65,6 +66,18 @@ def env(name, default=None, required=False):
     return value
 
 
+def email_recipients(required=True):
+    """Return configured recipients from EMAIL1 and EMAIL2."""
+    recipients = []
+    for name in ("EMAIL1", "EMAIL2"):
+        value = (env(name) or "").strip()
+        if value and value not in recipients:
+            recipients.append(value)
+    if required and not recipients:
+        raise SystemExit("Missing required environment variables: EMAIL1 or EMAIL2")
+    return recipients
+
+
 def utc_today():
     return datetime.now(timezone.utc).date()
 
@@ -111,7 +124,7 @@ def append_log(entry):
         "error": "失败",
     }
     status = status_map.get(entry.get("status"), entry.get("status", "未知"))
-    recipient = entry.get("recipient") or env("GMAIL_TO", env("GMAIL_FROM", "未设置"))
+    recipient = entry.get("recipient") or ", ".join(email_recipients(required=False)) or env("GMAIL_FROM", "未设置")
     fetched = entry.get("fetched", "-")
     selected = entry.get("selected", "-")
     subject = entry.get("subject", "")
@@ -143,6 +156,11 @@ def http_json(url, method="GET", data=None, headers=None, timeout=30):
                     return json.loads(text), text
                 except json.JSONDecodeError:
                     return None, text
+        except HTTPError as exc:
+            # Gmail returns a JSON error response for invalid messages and settings.
+            # Preserve it so callers can report the actionable server-side reason.
+            raw = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"HTTP {exc.code} for {url}: {raw[:1000]}") from exc
         except Exception as exc:
             last_error = exc
             if attempt < 2:
@@ -291,7 +309,8 @@ def build_prompt(start_label, end_label, query, papers):
 2. 按“直接相关：HCC/胆管癌/其他原发性肝癌”和“间接相关：肝转移/肝纤维化/背景机制”等分组。
 3. 每篇包括标题、期刊、日期、PMID、DOI、链接、为什么值得看。
 4. 最后给出3条今日研究热点。
-5. 结构清晰，使用简洁小标题和短段落，不要花哨排版，不要 emoji，不要输出原始 Markdown 符号。
+5. 每篇文献必须单独成段，并严格以“第1篇：”“第2篇：”这样的序号标题开头；不要把多篇文献连成一个段落。
+6. 结构清晰，使用简洁小标题和短段落，不要花哨排版，不要 emoji，不要输出原始 Markdown 符号。
 
 文献元数据 JSON：
 {json.dumps(papers, ensure_ascii=False, indent=2)}
@@ -395,7 +414,20 @@ def markdown_to_html(text):
             flush_paragraph()
             flush_list()
             continue
-        heading = re.match(r"^(?:第[一二三四五六七八九十]+[：:.]?\s*)?(.*)$", stripped)
+        paper_heading = re.match(r"^(第\s*[0-9一二三四五六七八九十]+\s*篇|[0-9]+[.)、])\s*[：:]?\s*(.*)$", stripped)
+        if paper_heading:
+            flush_paragraph()
+            flush_list()
+            label = paper_heading.group(1).replace(" ", "")
+            title = paper_heading.group(2).strip()
+            html_parts.append(
+                '<div style="margin:20px 0 10px;padding:8px 10px;background:#f0fdfa;'
+                'border-left:4px solid #0f766e;border-radius:8px;color:#0f766e;'
+                'font-size:15px;line-height:1.45;font-weight:700;">'
+                f"{html_escape(label)}"
+                f"<span style=\"color:#0f172a;font-weight:700;\">{html_escape(('：' + title) if title else '')}</span></div>"
+            )
+            continue
         if stripped and len(stripped) <= 60 and (stripped.endswith("：") or stripped.endswith(":")):
             flush_paragraph()
             flush_list()
@@ -436,11 +468,6 @@ def render_digest_html(subject, digest, search_url, start_label, end_label, pape
     <div style="margin:0;background:#f8fafc;padding:18px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#0f172a;">
       <div style="width:100%;max-width:480px;margin:0 auto;background:#f8fafc;">
         <div style="padding:18px 16px 14px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;padding:5px 10px;width:max-content;background:#f0fdfa;border:1px solid #ccfbf1;border-radius:20px;color:#0f766e;font-size:11px;font-weight:700;">
-            <span style="display:inline-block;width:6px;height:6px;background:#0f766e;border-radius:50%;"></span>
-            肝癌文献日报
-          </div>
-          <div style="font-size:24px;line-height:1.25;font-weight:800;margin-bottom:14px;color:#0f172a;">{html_escape(subject)}</div>
           <div style="display:flex;align-items:stretch;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
             <div style="flex:1;"><div style="font-size:11px;color:#64748b;">推送日期</div><div style="font-size:14px;font-weight:700;color:#0f172a;">{html_escape(end_label)}</div></div>
             <div style="width:1px;background:#e2e8f0;margin:0 8px;"></div>
@@ -483,7 +510,8 @@ def build_email(subject, body_html):
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = formataddr(("文献推送", env("GMAIL_FROM", required=True)))
-    msg["To"] = env("GMAIL_TO", env("GMAIL_FROM", required=True))
+    recipients = email_recipients()
+    msg["To"] = ", ".join(recipients)
     msg.set_content(body_html)
     msg.add_alternative(
         f"<div style='font-family: Arial, sans-serif; line-height: 1.55; color: #111;'>{body_html}</div>",
@@ -646,7 +674,7 @@ def main(force_send=False):
                 "status": "sent",
                 "mode": "no_results",
                 "subject": subject,
-                "recipient": env("GMAIL_TO", env("GMAIL_FROM", "")),
+                "recipient": ", ".join(email_recipients(required=False)),
                 "fetched": 0,
                 "selected": 0,
             }
@@ -663,7 +691,7 @@ def main(force_send=False):
                 "status": "skipped",
                 "mode": "dedup",
                 "reason": "no new pmids since last run",
-                "recipient": env("GMAIL_TO", env("GMAIL_FROM", "")),
+                "recipient": ", ".join(email_recipients(required=False)),
                 "fetched": len(pmids),
                 "selected": 0,
             }
@@ -711,7 +739,7 @@ def main(force_send=False):
             "status": "sent",
             "mode": "digest",
             "subject": subject,
-            "recipient": env("GMAIL_TO", env("GMAIL_FROM", "")),
+            "recipient": ", ".join(email_recipients(required=False)),
             "fetched": len(papers),
             "selected": len(selected),
             "pmids": [p["pmid"] for p in selected],

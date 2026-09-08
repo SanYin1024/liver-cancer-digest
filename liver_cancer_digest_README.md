@@ -21,7 +21,8 @@ export GMAIL_CLIENT_SECRET='...'
 export GMAIL_REFRESH_TOKEN='...'
 export GMAIL_REDIRECT_URI='http://localhost:8765'
 export GMAIL_FROM='8611qq@gmail.com'
-export GMAIL_TO='8611qq@gmail.com'
+export EMAIL1='hackwit1024@qq.com'
+export EMAIL2='8611qq@gmail.com'
 ```
 
 Optional:
@@ -42,7 +43,13 @@ export SCHEDULE_TZ="Asia/Shanghai"
 /Users/mac/Documents/Codex/2026-08-28/https-github-com-brycewang-stanford-auto/outputs/run_liver_cancer_digest.sh
 ```
 
-Use `--all` to force a send even when no new PMIDs are found, or `--daemon` to run on the daily schedule.
+Use `-a` (or `--all`) to force a send even when no new PMIDs are found:
+
+```bash
+python3 /Users/mac/Documents/Codex/2026-08-28/https-github-com-brycewang-stanford-auto/outputs/liver_cancer_digest.py -a
+```
+
+Use `--daemon` to run on the daily schedule.
 
 ## One-time Gmail OAuth setup
 
@@ -87,7 +94,7 @@ GMAIL_CLIENT_ID
 GMAIL_CLIENT_SECRET
 GMAIL_REFRESH_TOKEN
 GMAIL_FROM
-GMAIL_TO
+EMAIL1 / EMAIL2
 ```
 
 The workflow stores `state.json` in the repository so PMID deduplication
