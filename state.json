@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-09-08T06:50:57.165393+00:00",
+  "last_run": "2026-09-08T06:52:20.874938+00:00",
   "pmids": [
     "40730457",
     "42438834",
@@ -23,7 +23,13 @@
     "query": "((\"Liver Neoplasms\"[MeSH Terms] OR hepatocellular carcinoma[Title/Abstract] OR HCC[Title/Abstract] OR cholangiocarcinoma[Title/Abstract] OR \"liver cancer\"[Title/Abstract] OR \"hepatic cancer\"[Title/Abstract])) AND (2026/09/07:2026/09/08[Date - Publication])",
     "count": 12,
     "selected": [
-      "42705697"
+      "42705697",
+      "42704127",
+      "42703646",
+      "42440881",
+      "42704557",
+      "42704135",
+      "42703992"
     ]
   }
 }
