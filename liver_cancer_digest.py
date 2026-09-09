@@ -265,10 +265,12 @@ def score_paper(paper):
         "liver neoplasm",
     ]
     topical_hits = [
-        "immunotherapy",
-        "immune",
         "tace",
+        "haic",
+        "hepatic arterial infusion",
+        "ct83",
         "tki",
+        "systemic therapy",
         "targeted",
         "metastasis",
         "fibrosis",
@@ -308,9 +310,10 @@ def build_prompt(start_label, end_label, query, papers):
 1. 开头一句总结今日新增数量。
 2. 按“直接相关：HCC/胆管癌/其他原发性肝癌”和“间接相关：肝转移/肝纤维化/背景机制”等分组。
 3. 每篇包括标题、期刊、日期、PMID、DOI、链接、为什么值得看。
-4. 最后给出3条今日研究热点。
-5. 每篇文献必须单独成段，并严格以“第1篇：”“第2篇：”这样的序号标题开头；不要把多篇文献连成一个段落。
-6. 结构清晰，使用简洁小标题和短段落，不要花哨排版，不要 emoji，不要输出原始 Markdown 符号。
+4. 特别重点关注并解读与以下方向相关的进展：TACE、HAIC、CT83靶点、免疫（Immunity/Immunotherapy）、TKI 及系统治疗（systemic therapy）。
+5. 最后给出3条今日研究热点。
+6. 每篇文献必须单独成段，并严格以“第1篇：”“第2篇：”这样的序号标题开头；不要把多篇文献连成一个段落。
+7. 结构清晰，使用简洁小标题和短段落，不要花哨排版，不要 emoji，不要输出原始 Markdown 符号。
 
 文献元数据 JSON：
 {json.dumps(papers, ensure_ascii=False, indent=2)}
