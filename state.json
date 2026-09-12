@@ -1,5 +1,5 @@
 {
-  "last_run": "2026-09-11T04:29:37.884371+00:00",
+  "last_run": "2026-09-12T04:26:12.496274+00:00",
   "pmids": [
     "40730457",
     "42407433",
@@ -73,16 +73,37 @@
     "42722028",
     "42722123",
     "42722415",
-    "42722534"
+    "42722534",
+    "42723464",
+    "42723513",
+    "42725366",
+    "42726156",
+    "42726197",
+    "42726370",
+    "42726465",
+    "42726804",
+    "42726862",
+    "42727862",
+    "42727892",
+    "42727893",
+    "42728030",
+    "42728104",
+    "42728139"
   ],
   "last_search": {
-    "query": "((\"Liver Neoplasms\"[MeSH Terms] OR hepatocellular carcinoma[Title/Abstract] OR HCC[Title/Abstract] OR cholangiocarcinoma[Title/Abstract] OR \"liver cancer\"[Title/Abstract] OR \"hepatic cancer\"[Title/Abstract])) AND (2026/09/10:2026/09/11[Date - Publication])",
-    "count": 29,
+    "query": "((\"Liver Neoplasms\"[MeSH Terms] OR hepatocellular carcinoma[Title/Abstract] OR HCC[Title/Abstract] OR cholangiocarcinoma[Title/Abstract] OR \"liver cancer\"[Title/Abstract] OR \"hepatic cancer\"[Title/Abstract])) AND (2026/09/11:2026/09/12[Date - Publication])",
+    "count": 17,
     "selected": [
-      "42722415",
-      "42722534",
-      "42722123",
-      "42722028"
+      "42727893",
+      "42726156",
+      "42726197",
+      "42725366",
+      "42727892",
+      "42728104",
+      "42726370",
+      "42723464",
+      "42728030",
+      "42726804"
     ]
   }
 }
